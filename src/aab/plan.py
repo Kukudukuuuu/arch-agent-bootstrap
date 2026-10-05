@@ -10,6 +10,9 @@ def build_plan(checks: list[dict], only: str | None = None) -> list[dict]:
         steps.append(
             {
                 "name": c["name"],
+                "wanted": c["wanted"],
+                "found": c["found"],
+                "ok": c["ok"],
                 "status": "skip" if c["ok"] else "todo",
                 "detail": c["version"] or c["fix_hint"],
                 "fix_hint": c["fix_hint"],

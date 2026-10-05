@@ -1,16 +1,23 @@
 """Checks: read-only Host probes. Never mutates."""
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 
 WANTED = [
-    ("python", "python3 --version", "sudo pacman -S --needed python"),
-    ("node", "node --version", "sudo pacman -S --needed nodejs"),
-    ("go", "go version", "sudo pacman -S --needed go"),
-    ("gh", "gh --version", "sudo pacman -S --needed github-cli"),
-    ("opencode", "opencode --version", "see https://opencode.ai/docs"),
-    ("git", "git --version", "sudo pacman -S --needed git base-devel"),
+    # (name, kind, probe, fix_hint)
+    # kind: "binary" = which <binary> + version cmd; "command" = shell rc==0; "file" = path exists
+    ("python", "binary:python3", "python3 --version", "sudo pacman -S --needed python"),
+    ("node", "binary:node", "node --version", "sudo pacman -S --needed nodejs"),
+    ("go", "binary:go", "go version", "sudo pacman -S --needed go"),
+    ("gh", "binary:gh", "gh --version", "sudo pacman -S --needed github-cli"),
+    ("opencode", "binary:opencode", "opencode --version", "see https://opencode.ai/docs"),
+    ("git", "binary:git", "git --version", "sudo pacman -S --needed git"),
+    ("base-devel", "command", "pacman -Qi base-devel", "sudo pacman -S --needed base-devel"),
+    ("gh-auth", "command", "gh auth status", "gh auth login"),
+    ("opencode-config", "file", "~/.config/opencode/opencode.json", "run `opencode init` to create config"),
+    ("fonts", "command", "fc-list", "install a Nerd Font (advisory only)"),
 ]
 
 
@@ -29,11 +36,23 @@ def _version(cmd: str) -> str | None:
 
 def run_checks() -> list[dict]:
     results = []
-    for name, probe, fix in WANTED:
-        binary = name if name != "python" else "python3"
-        found = shutil.which(binary) is not None
-        version = _version(probe) if found else None
-        ok = found and version is not None
+    for name, kind, probe, fix in WANTED:
+        if kind.startswith("binary:"):
+            binary = kind.split(":", 1)[1]
+            found = shutil.which(binary) is not None
+            version = _version(probe) if found else None
+            ok = found and version is not None
+        elif kind == "command":
+            version = _version(probe)
+            ok = version is not None
+            found = True  # probe ran; readiness reported via ok
+        elif kind == "file":
+            path = os.path.expanduser(probe)
+            found = os.path.exists(path)
+            version = path if found else None
+            ok = found
+        else:
+            raise ValueError(f"unknown probe kind: {kind}")
         results.append(
             {
                 "name": name,
