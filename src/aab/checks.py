@@ -16,7 +16,7 @@ WANTED = [
     ("git", "binary:git", "git --version", "sudo pacman -S --needed git"),
     ("base-devel", "command", "pacman -Qi base-devel", "sudo pacman -S --needed base-devel"),
     ("gh-auth", "command", "gh auth status", "gh auth login"),
-    ("opencode-config", "file", "~/.config/opencode/opencode.json", "run `opencode init` to create config"),
+    ("opencode-config", "file", "~/.config/opencode", "create ~/.config/opencode/ (manual; never auto-modified)"),
     ("fonts", "command", "fc-list", "install a Nerd Font (advisory only)"),
 ]
 
